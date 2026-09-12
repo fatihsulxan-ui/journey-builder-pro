@@ -258,34 +258,39 @@ export type HocaMailAyar = {
   ekstraHocalar: EkstraHoca[];
 };
 
-export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
-  return onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
-    const v = snap.data() ?? {};
-    const ham = Array.isArray(v.ekstraHocalar) ? v.ekstraHocalar : [];
-    cb({
-      mailler:
-        v.hocaMailler && typeof v.hocaMailler === "object"
-          ? (v.hocaMailler as Record<string, string>)
-          : {},
-      gonderilen:
-        v.aidatMailGonderim && typeof v.aidatMailGonderim === "object"
-          ? (v.aidatMailGonderim as Record<string, string[]>)
-          : {},
-      ekstraHocalar: ham
-        .filter(
-          (h: unknown): h is Partial<EkstraHoca> =>
-            !!h && typeof h === "object",
-        )
-        .map((h) => ({
-          id: typeof h.id === "string" ? h.id : String(Math.random()),
-          ad: typeof h.ad === "string" ? h.ad : "",
-          eposta: typeof h.eposta === "string" ? h.eposta : "",
-          grup:
-            typeof h.grup === "string" && h.grup ? h.grup : undefined,
+function hocaMailCoz(ham0: AyarVeri): HocaMailAyar {
+  const v = (ham0 ?? {}) as Record<string, unknown>;
+  const ham = Array.isArray(v["ekstraHocalar"]) ? (v["ekstraHocalar"] as unknown[]) : [];
+  return {
+    mailler:
+      v["hocaMailler"] && typeof v["hocaMailler"] === "object"
+        ? (v["hocaMailler"] as Record<string, string>)
+        : {},
+    gonderilen:
+      v["aidatMailGonderim"] && typeof v["aidatMailGonderim"] === "object"
+        ? (v["aidatMailGonderim"] as Record<string, string[]>)
+        : {},
+    ekstraHocalar: ham
+      .filter(
+        (h: unknown): h is Partial<EkstraHoca> => !!h && typeof h === "object",
+      )
+      .map((h) => ({
+        id: typeof h.id === "string" ? h.id : String(Math.random()),
+        ad: typeof h.ad === "string" ? h.ad : "",
+        eposta: typeof h.eposta === "string" ? h.eposta : "",
+        grup: typeof h.grup === "string" && h.grup ? h.grup : undefined,
+      }))
+      .filter((h) => h.ad || h.eposta),
+  };
+}
 
-        }))
-        .filter((h) => h.ad || h.eposta),
-    });
+export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
+  const yerel = cacheOku<HocaMailAyar>(CACHE.hocaMail);
+  if (!ayarSonVar && yerel) cb(yerel);
+  return ayarlariDinle((v) => {
+    const ayar = hocaMailCoz(v);
+    cacheYaz(CACHE.hocaMail, ayar);
+    cb(ayar);
   });
 }
 
