@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  GRUPLAR,
-  gruplarCacheOku,
-  gruplariDinle,
-  type GrupBilgi,
-} from "@/lib/talebeler";
+import { GRUPLAR, gruplarCacheOku, gruplariDinle, type GrupBilgi } from "@/lib/talebeler";
 
 export function useGruplar(): GrupBilgi[] {
   const [gruplar, setGruplar] = useState<GrupBilgi[]>(GRUPLAR);

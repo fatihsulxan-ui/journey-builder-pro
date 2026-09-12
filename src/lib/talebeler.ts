@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   onSnapshot,
-  
   updateDoc,
   deleteDoc,
   writeBatch,
@@ -68,10 +67,7 @@ let talebeUnsub: (() => void) | null = null;
  *    düzenleme ve silme (kendi cihazında anında, diğer cihazlarda ~1 sn)
  *    otomatik olarak yayılır.
  */
-export function talebeleriDinle(
-  cb: (t: Talebe[]) => void,
-  onError?: (e: Error) => void,
-) {
+export function talebeleriDinle(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
   talebeAbone.add(cb);
   if (onError) talebeHataAbone.add(onError);
 
@@ -98,10 +94,7 @@ export function talebeleriDinle(
   };
 }
 
-function talebeleriDinleHam(
-  cb: (t: Talebe[]) => void,
-  onError?: (e: Error) => void,
-) {
+function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
   const q = query(collection(db, COL), orderBy("sira", "asc"));
   return onSnapshot(
     q,
@@ -117,8 +110,7 @@ function talebeleriDinleHam(
               ? (v.kiraatGunler as Record<string, number[]>)
               : {},
           sayfa: typeof v.sayfa === "number" ? v.sayfa : 1,
-          hedefHaftalik:
-            typeof v.hedefHaftalik === "number" ? v.hedefHaftalik : 5,
+          hedefHaftalik: typeof v.hedefHaftalik === "number" ? v.hedefHaftalik : 5,
           gecmis: Array.isArray(v.gecmis) ? v.gecmis : [],
           sira: typeof v.sira === "number" ? v.sira : 0,
           fotoUrl: typeof v.fotoUrl === "string" ? v.fotoUrl : undefined,
@@ -136,12 +128,8 @@ function talebeleriDinleHam(
             v.hadisGunler && typeof v.hadisGunler === "object"
               ? (v.hadisGunler as Record<string, number[]>)
               : {},
-          aidat:
-            v.aidat && typeof v.aidat === "object"
-              ? (v.aidat as Record<string, boolean>)
-              : {},
-          grup:
-            typeof v.grup === "string" && v.grup ? v.grup : undefined,
+          aidat: v.aidat && typeof v.aidat === "object" ? (v.aidat as Record<string, boolean>) : {},
+          grup: typeof v.grup === "string" && v.grup ? v.grup : undefined,
 
           sinif: typeof v.sinif === "string" ? v.sinif : undefined,
           aidatSadece: v.aidatSadece === true,
@@ -173,17 +161,12 @@ function siraliYaz(liste: Talebe[]) {
 
 export async function talebeEkle(t: Omit<Talebe, "id">) {
   const ref = doc(collection(db, COL));
-  talebeleriYerelUygula((mevcut) =>
-    siraliYaz([...mevcut, { ...(t as Talebe), id: ref.id }]),
-  );
+  talebeleriYerelUygula((mevcut) => siraliYaz([...mevcut, { ...(t as Talebe), id: ref.id }]));
   await setDoc(ref, t as Record<string, unknown>);
   return ref.id;
 }
 
-export async function talebeGuncelle(
-  id: string,
-  patch: Partial<Omit<Talebe, "id">>,
-) {
+export async function talebeGuncelle(id: string, patch: Partial<Omit<Talebe, "id">>) {
   talebeleriYerelUygula((mevcut) =>
     siraliYaz(mevcut.map((t) => (t.id === id ? { ...t, ...patch } : t))),
   );
@@ -201,9 +184,7 @@ export async function topluHedefGuncelle(ids: string[], hedef: number) {
     mevcut.map((t) => (kume.has(t.id) ? { ...t, hedefHaftalik: hedef } : t)),
   );
   const batch = writeBatch(db);
-  ids.forEach((id) =>
-    batch.update(doc(db, COL, id), { hedefHaftalik: hedef }),
-  );
+  ids.forEach((id) => batch.update(doc(db, COL, id), { hedefHaftalik: hedef }));
   await batch.commit();
 }
 
@@ -260,11 +241,7 @@ export async function aidatTutariKaydet(tutar: number) {
   await setDoc(doc(db, AYAR_COL, AYAR_DOC), { aidatTutar: tutar }, { merge: true });
 }
 
-export async function aidatOdemeAyarla(
-  t: Talebe,
-  ayKey: string,
-  odendi: boolean,
-) {
+export async function aidatOdemeAyarla(t: Talebe, ayKey: string, odendi: boolean) {
   const harita = { ...(t.aidat ?? {}), [ayKey]: odendi };
   await talebeGuncelle(t.id, { aidat: harita });
 }
@@ -297,9 +274,7 @@ function hocaMailCoz(ham0: AyarVeri): HocaMailAyar {
         ? (v["aidatMailGonderim"] as Record<string, string[]>)
         : {},
     ekstraHocalar: ham
-      .filter(
-        (h: unknown): h is Partial<EkstraHoca> => !!h && typeof h === "object",
-      )
+      .filter((h: unknown): h is Partial<EkstraHoca> => !!h && typeof h === "object")
       .map((h) => ({
         id: typeof h.id === "string" ? h.id : String(Math.random()),
         ad: typeof h.ad === "string" ? h.ad : "",
@@ -321,19 +296,11 @@ export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
 }
 
 export async function ekstraHocalariKaydet(hocalar: EkstraHoca[]) {
-  await setDoc(
-    doc(db, AYAR_COL, AYAR_DOC),
-    { ekstraHocalar: hocalar },
-    { merge: true },
-  );
+  await setDoc(doc(db, AYAR_COL, AYAR_DOC), { ekstraHocalar: hocalar }, { merge: true });
 }
 
 export async function hocaMailleriKaydet(mailler: Record<string, string>) {
-  await setDoc(
-    doc(db, AYAR_COL, AYAR_DOC),
-    { hocaMailler: mailler },
-    { merge: true },
-  );
+  await setDoc(doc(db, AYAR_COL, AYAR_DOC), { hocaMailler: mailler }, { merge: true });
 }
 
 export async function aidatMailGonderimIsaretle(
@@ -376,8 +343,7 @@ function grupListeCoz(data: Record<string, unknown> | undefined): GrupBilgi[] {
     return {
       id: g.id,
       ad: typeof o?.ad === "string" && o.ad.trim() ? o.ad.trim() : g.ad,
-      hoca:
-        typeof o?.hoca === "string" && o.hoca.trim() ? o.hoca.trim() : g.hoca,
+      hoca: typeof o?.hoca === "string" && o.hoca.trim() ? o.hoca.trim() : g.hoca,
     };
   });
 }
@@ -414,5 +380,3 @@ export async function gruplariKaydet(liste: GrupBilgi[]) {
     { merge: true },
   );
 }
-
-
