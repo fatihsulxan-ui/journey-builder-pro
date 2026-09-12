@@ -12,6 +12,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { cacheOku, cacheYaz, CACHE } from "./yerelCache";
 
 export type SayfaKaydi = { t: number; sayfa: number };
 
