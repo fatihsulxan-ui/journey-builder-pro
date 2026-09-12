@@ -1,5 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDvJEa6olx2JX7YrsVbR0ZIwX7eJ90-T8E",
@@ -12,7 +18,25 @@ const firebaseConfig = {
 };
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+// Tarayıcıda kalıcı (IndexedDB) önbellek: uygulama açılır açılmaz veriler
+// yerelden gösterilir, arka planda sunucudan tazelenir (stale-while-revalidate).
+// Çok sekmeli kullanım da desteklenir.
+function firestoreOlustur(): Firestore {
+  if (typeof window === "undefined") return getFirestore(app);
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch {
+    // Zaten başlatılmışsa mevcut örneği kullan.
+    return getFirestore(app);
+  }
+}
+
+export const db = firestoreOlustur();
 
 // Analytics yalnızca tarayıcıda ve destekleniyorsa başlatılır.
 if (typeof window !== "undefined") {
