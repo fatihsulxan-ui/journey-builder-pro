@@ -356,9 +356,18 @@ function grupListeCoz(data: Record<string, unknown> | undefined): GrupBilgi[] {
   });
 }
 
+export function gruplarCacheOku(): GrupBilgi[] | null {
+  const yerel = cacheOku<GrupBilgi[]>(CACHE.gruplar);
+  return yerel && yerel.length > 0 ? yerel : null;
+}
+
 export function gruplariDinle(cb: (g: GrupBilgi[]) => void) {
-  return onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
-    cb(grupListeCoz(snap.data() as Record<string, unknown> | undefined));
+  const yerel = gruplarCacheOku();
+  if (!ayarSonVar && yerel) cb(yerel);
+  return ayarlariDinle((v) => {
+    const liste = grupListeCoz(v as Record<string, unknown> | undefined);
+    if (liste.length > 0) cacheYaz(CACHE.gruplar, liste);
+    cb(liste);
   });
 }
 
