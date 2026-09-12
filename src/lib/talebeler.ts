@@ -2,7 +2,7 @@ import {
   collection,
   doc,
   onSnapshot,
-  addDoc,
+  
   updateDoc,
   deleteDoc,
   writeBatch,
