@@ -1317,15 +1317,17 @@ function Index() {
             </Card>
             </>
           ) : (
-            <AidatPanel
-              talebeler={aidatTalebeler}
-              hocaModu={hocaModu}
-              onTalebe={(t) => {
-                setProfilAidattan(true);
-                setProfilGoster(t);
-              }}
-              grupFiltre={grupFiltre}
-            />
+            <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Yükleniyor…</div>}>
+              <AidatPanel
+                talebeler={aidatTalebeler}
+                hocaModu={hocaModu}
+                onTalebe={(t) => {
+                  setProfilAidattan(true);
+                  setProfilGoster(t);
+                }}
+                grupFiltre={grupFiltre}
+              />
+            </Suspense>
           )
         ) : (
 
