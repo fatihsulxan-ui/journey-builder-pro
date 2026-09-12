@@ -157,8 +157,26 @@ function talebeleriDinleHam(
   );
 }
 
+// Yerel listeyi ve önbelleği sunucu yanıtını beklemeden günceller
+// (iyimser / optimistic güncelleme). Sunucudan gerçek veri gelince üzerine yazılır.
+function talebeleriYerelUygula(donustur: (mevcut: Talebe[]) => Talebe[]) {
+  const mevcut = talebeSon ?? cacheOku<Talebe[]>(CACHE.talebeler) ?? [];
+  const yeni = donustur(mevcut);
+  talebeSon = yeni;
+  cacheYaz(CACHE.talebeler, yeni);
+  talebeAbone.forEach((f) => f(yeni));
+}
+
+function siraliYaz(liste: Talebe[]) {
+  return [...liste].sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+}
+
 export async function talebeEkle(t: Omit<Talebe, "id">) {
-  const ref = await addDoc(collection(db, COL), t);
+  const ref = doc(collection(db, COL));
+  talebeleriYerelUygula((mevcut) =>
+    siraliYaz([...mevcut, { ...(t as Talebe), id: ref.id }]),
+  );
+  await setDoc(ref, t as Record<string, unknown>);
   return ref.id;
 }
 
@@ -166,14 +184,22 @@ export async function talebeGuncelle(
   id: string,
   patch: Partial<Omit<Talebe, "id">>,
 ) {
+  talebeleriYerelUygula((mevcut) =>
+    siraliYaz(mevcut.map((t) => (t.id === id ? { ...t, ...patch } : t))),
+  );
   await updateDoc(doc(db, COL, id), patch as Record<string, unknown>);
 }
 
 export async function talebeSil(id: string) {
+  talebeleriYerelUygula((mevcut) => mevcut.filter((t) => t.id !== id));
   await deleteDoc(doc(db, COL, id));
 }
 
 export async function topluHedefGuncelle(ids: string[], hedef: number) {
+  const kume = new Set(ids);
+  talebeleriYerelUygula((mevcut) =>
+    mevcut.map((t) => (kume.has(t.id) ? { ...t, hedefHaftalik: hedef } : t)),
+  );
   const batch = writeBatch(db);
   ids.forEach((id) =>
     batch.update(doc(db, COL, id), { hedefHaftalik: hedef }),
