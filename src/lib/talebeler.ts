@@ -55,7 +55,50 @@ export type Talebe = {
 
 const COL = "talebeler";
 
+// ---- Paylaşımlı talebe aboneliği (tek Firestore dinleyicisi) ----
+let talebeSon: Talebe[] | null = null;
+const talebeAbone = new Set<(t: Talebe[]) => void>();
+const talebeHataAbone = new Set<(e: Error) => void>();
+let talebeUnsub: (() => void) | null = null;
+
+/**
+ * Talebeleri dinler.
+ * 1) Varsa yerel önbellekteki liste anında verilir (bekleme yok).
+ * 2) Aynı anda tek bir Firestore dinleyicisi kullanılır; her yeni kayıt,
+ *    düzenleme ve silme (kendi cihazında anında, diğer cihazlarda ~1 sn)
+ *    otomatik olarak yayılır.
+ */
 export function talebeleriDinle(
+  cb: (t: Talebe[]) => void,
+  onError?: (e: Error) => void,
+) {
+  talebeAbone.add(cb);
+  if (onError) talebeHataAbone.add(onError);
+
+  const yerel = talebeSon ?? cacheOku<Talebe[]>(CACHE.talebeler);
+  if (yerel && yerel.length > 0) {
+    talebeSon = yerel;
+    cb(yerel);
+  }
+
+  if (!talebeUnsub) {
+    talebeUnsub = talebeleriDinleHam(
+      (liste) => {
+        talebeSon = liste;
+        cacheYaz(CACHE.talebeler, liste);
+        talebeAbone.forEach((f) => f(liste));
+      },
+      (e) => talebeHataAbone.forEach((f) => f(e)),
+    );
+  }
+
+  return () => {
+    talebeAbone.delete(cb);
+    if (onError) talebeHataAbone.delete(onError);
+  };
+}
+
+function talebeleriDinleHam(
   cb: (t: Talebe[]) => void,
   onError?: (e: Error) => void,
 ) {
