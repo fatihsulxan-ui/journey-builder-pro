@@ -1,13 +1,18 @@
-import * as XLSX from "xlsx";
-
+// XLSX kütüphanesi büyük olduğu için yalnızca gerçekten Excel indirilirken /
+// okunurken (dinamik import ile) yüklenir. Böylece açılış çok daha hızlı olur.
 export type ExcelSutun = { baslik: string; genislik?: number };
 
-export function excelIndir(
+async function xlsxYukle() {
+  return await import("xlsx");
+}
+
+export async function excelIndir(
   dosyaAdi: string,
   sayfaAdi: string,
   sutunlar: ExcelSutun[],
   satirlar: (string | number)[][],
 ) {
+  const XLSX = await xlsxYukle();
   const veri = [sutunlar.map((s) => s.baslik), ...satirlar];
   const ws = XLSX.utils.aoa_to_sheet(veri);
   ws["!cols"] = sutunlar.map((s) => ({ wch: s.genislik ?? 18 }));
@@ -16,9 +21,8 @@ export function excelIndir(
   XLSX.writeFile(wb, `${dosyaAdi}.xlsx`);
 }
 
-export async function excelOku(
-  dosya: File,
-): Promise<Record<string, string>[]> {
+export async function excelOku(dosya: File): Promise<Record<string, string>[]> {
+  const XLSX = await xlsxYukle();
   const buf = await dosya.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
