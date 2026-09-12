@@ -1604,7 +1604,9 @@ function Index() {
             <DialogTitle>E-posta Merkezi</DialogTitle>
           </DialogHeader>
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 py-1">
-            <AidatHatirlatma talebeler={talebeler} />
+            <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Yükleniyor…</div>}>
+              <AidatHatirlatma talebeler={talebeler} />
+            </Suspense>
           </div>
         </DialogContent>
       </Dialog>
