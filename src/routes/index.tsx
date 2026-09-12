@@ -32,8 +32,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import AidatPanel from "@/components/AidatPanel";
-import AidatHatirlatma from "@/components/AidatHatirlatma";
+// Bu iki panel yalnızca açıldıklarında yüklenir (açılış hızı için).
+const AidatPanel = lazy(() => import("@/components/AidatPanel"));
+const AidatHatirlatma = lazy(() => import("@/components/AidatHatirlatma"));
 
 import {
   DropdownMenu,
