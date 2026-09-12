@@ -196,10 +196,37 @@ export async function aidatTutariniOku(): Promise<number> {
   }
 }
 
+// ---- Paylaşımlı ayarlar dokümanı aboneliği ----
+// Aidat tutarı, grup listesi ve hoca e-postaları aynı dokümanda tutulduğu için
+// hepsi tek bir Firestore dinleyicisi üzerinden beslenir.
+type AyarVeri = Record<string, unknown> | undefined;
+let ayarSon: AyarVeri;
+let ayarSonVar = false;
+const ayarAbone = new Set<(v: AyarVeri) => void>();
+let ayarUnsub: (() => void) | null = null;
+
+function ayarlariDinle(cb: (v: AyarVeri) => void) {
+  ayarAbone.add(cb);
+  if (ayarSonVar) cb(ayarSon);
+  if (!ayarUnsub) {
+    ayarUnsub = onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
+      ayarSon = snap.data() as AyarVeri;
+      ayarSonVar = true;
+      ayarAbone.forEach((f) => f(ayarSon));
+    });
+  }
+  return () => {
+    ayarAbone.delete(cb);
+  };
+}
+
 export function aidatTutariniDinle(cb: (tutar: number) => void) {
-  return onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
-    const v = snap.data()?.aidatTutar;
-    cb(typeof v === "number" ? v : 0);
+  const yerel = cacheOku<number>(CACHE.aidatTutar);
+  if (!ayarSonVar && typeof yerel === "number") cb(yerel);
+  return ayarlariDinle((v) => {
+    const t = typeof v?.["aidatTutar"] === "number" ? (v["aidatTutar"] as number) : 0;
+    cacheYaz(CACHE.aidatTutar, t);
+    cb(t);
   });
 }
 
